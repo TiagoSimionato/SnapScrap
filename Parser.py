@@ -21,7 +21,7 @@ def scrap(html):
           item = {}
 
           name = child.find(class_='bundle-card__name').contents[0].replace('-', '')
-          item['name'] = name
+          item['Name'] = name
           
           price = child.find('div', class_='bundle-card__cost').contents[0][2:-1]
           goldCost = child.find(class_='gold-price__value')
@@ -33,13 +33,15 @@ def scrap(html):
               if node:
                 data = re.sub(pattern="[^\d]+", repl='', string=node)
               if data:
-                item[info.lower()] = data
+                item[info] = data
+              else:
+                item[info] = '0'
           
           if price:
-            item['price'] = price
+            item['Cost'] = price
             paidBundles.append(item)
           if goldCost:
-            item['goldCost'] = goldCost.contents[0]
+            item['Cost'] = goldCost.contents[0] + 'G'
             goldBundles.append(item)
 
         if (has_id(child) and re.match(pattern=".*Bundles.*", string=child.attrs['id']) != None and isBundle == False):
