@@ -1,49 +1,51 @@
-from bs4 import BeautifulSoup
-import re
+def scrap(html):
+  from bs4 import BeautifulSoup
+  import re
 
-def has_id(elem):
-  return elem.has_attr('id')
+  def has_id(elem):
+    return elem.has_attr('id')
 
-def h3class(elem):
-  return elem
+  soup = BeautifulSoup(html, 'html.parser')
+  mainDiv = soup.find(class_='l-sidebar__main')
 
-with open("./test.html", 'r') as file:
-  html = file.read()
+  if mainDiv:
+    isBundle = False
+    paidBundles = []
+    goldBundles = []
+    for child in mainDiv.contents:
+      if (child.name != None):
+        if (child.name != 'div') :
+          isBundle = False
 
-soup = BeautifulSoup(html, 'html.parser')
-mainDiv = soup.find(class_='l-sidebar__main')
-a = mainDiv.find_all(["h3", "div"], class_="my-3")
-b = mainDiv.findAll('h3', id=re.compile(".*Bundles.*"))
+        if isBundle:
+          item = {}
 
-isBundle = False
-paidBundles = []
-goldBundles = []
-for child in mainDiv.contents:
-  if (child.name != None):
-    if (child.name != 'div') :
-      isBundle = False
+          name = child.find(class_='bundle-card__name').contents[0].replace('-', '')
+          item['name'] = name
+          
+          price = child.find('div', class_='bundle-card__cost').contents[0][2:-1]
+          goldCost = child.find(class_='gold-price__value')
 
-    if (isBundle):
-      price = child.find('div', class_='bundle-card__cost').contents[0][2:-1]
-      if price:
-        node = child.find(string=re.compile(".*Tokens.*"))
-        print(node)
-        if node:
-          tokens = re.search(pattern="[\n]*", string=node.get_text)
-        else:
-          tokens = "0"
-        item = {
-          "tokens"  : tokens
-        }
-        paidBundles.append(item)
-      
-      goldCost = child.find(class_='gold-price__value')
-      if (goldCost):
-        pass
-        #print(goldCost.get_text())
+          if price or goldCost:
+            for info in ['Tokens', 'Credits']:
+              node = child.find(string=re.compile(f".*{info}.*"))
+              data = None
+              if node:
+                data = re.sub(pattern="[^\d]+", repl='', string=node)
+              if data:
+                item[info.lower()] = data
+          
+          if price:
+            item['price'] = price
+            paidBundles.append(item)
+          if goldCost:
+            item['goldCost'] = goldCost.contents[0]
+            goldBundles.append(item)
 
-    if (has_id(child) and re.match(pattern=".*Bundles.*", string=child.attrs['id']) != None and isBundle == False):
-      isBundle = True
-  #print(elment.find_all("h3", id))
+        if (has_id(child) and re.match(pattern=".*Bundles.*", string=child.attrs['id']) != None and isBundle == False):
+          isBundle = True
 
-print(paidBundles)
+    return [paidBundles, goldBundles]
+  else:
+    print("The scrapped site structure probably changed, so the code is broken")
+    return None
